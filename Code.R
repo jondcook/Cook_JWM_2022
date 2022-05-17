@@ -76,7 +76,7 @@ neighborhood <- function(raster){
 #run neighborhood function of study area grid
 nn <- neighborhood(cell)
 
-
+#effect sizes for state processes
 alpha.est <- -3.7
 neigh.occ <- .5
 alpha.emer <- -11
@@ -157,17 +157,15 @@ for(l in 1:(nyear-1)){
 
 psi.pred[,1] <- psi.pred[,2]
 
-###generate observations from true.presence data
-
+###effect sizes for observation processes
 alpha.det <- -1.5
 weight.det <- 0.2
 prev.det <- 0.5
 mean.weight <- 0.4
 sd.weight <- 1.8
 
+#simulate prevalence trends over time
 prev <- numeric(0)
-
-
 for (l in 1:nyear){
   prev[l] <- 0.01*(1+.19)^l
   
@@ -181,12 +179,12 @@ for (l in 1:nyear){
   prev.std.mat[,l] <- rep(prev.std[l], times=nsite)
 }
 
+#simulate disease surveillance weights
 weights <- rtruncnorm(1e6, a=0,b=Inf, mean=2,sd=5)
 
 
 # #sample according to risk
 multiplier.array <- array(c(vec.matrix),dim = c(nsite,nobs,nyear))
-
 
 for(l in 1:nyear){
   
@@ -226,8 +224,7 @@ for(l in 1:nyear){
   }
 } 
 
-##generate neighborhood data; start here!
-
+##generate neighborhood data
 pos <- matrix(vec.matrix, nrow = nsite, ncol = nyear) 
 ##Create a reference dataframe
 for(l in 1:nyear){
@@ -235,7 +232,6 @@ for(l in 1:nyear){
 }
 
 pos <- ifelse(pos[,] > 0, 1, 0)
-
 
 WhichNborsMat.y <- array(vec.matrix, c(nsite, 8, nyear))
 dist.std.y <- matrix(vec.matrix, nrow = nsite, ncol = nyear)
@@ -302,15 +298,14 @@ Q.alpha <- as.matrix(t(K) %*% Q %*% K)
 mu.a <- rep(0, nrow(Q.alpha))
 
 
-
 #create list to load into jags
 test1 <- list(y=y.sub, nsite=nrow(y.sub), nyear = dim(y.sub)[3], nrep = dim(y.sub)[2],
               WhichNborsMat = WhichNborsMat.y, dist=dist.std.y,
               K=K, Q.alpha= Q.alpha, mu.a=mu.a, Xz.vec=Xz.vec, hab.emer=habdat.emer,
-              hab.pers=habdat.pers, W2=w2.std.y, prev=prev.std.mat) #, W2.supple=W2.supple, known.pos=known.pos)
+              hab.pers=habdat.pers, W2=w2.std.y, prev=prev.std.mat)
 
 
-rm(list = ls()[!ls() %in% c("test1", "true.presence", "m")])
+rm(list = ls()[!ls() %in% c("test1")])
 
 str(test1)
 attach(test1)
@@ -355,7 +350,7 @@ cat("
       i.nbors[i, k] <- ifelse(n.neigh[i, k] > 0, 1, 0)
       
       #Psi Mixture
-      psi[i, (k+1)] <- z.forjags[i,k] * phi[i,k] + (1-z.forjags[i,k]) * i.nbors[i,k] * gamma[i,k] + (1-z.forjags[i,k]) * (1- i.nbors[i,k]) * delta[i,k]       #gamma established spread, delta emergent spread
+      psi[i, (k+1)] <- z.forjags[i,k] * phi[i,k] + (1-z.forjags[i,k]) * i.nbors[i,k] * gamma[i,k] + (1-z.forjags[i,k]) * (1- i.nbors[i,k]) * delta[i,k]  #gamma established spread, delta emergent spread
       logit(gamma[i,k]) <- alpha.est + neigh.occ * n.neigh[i,k]  #established disease spread
       logit(delta[i,k]) <- alpha.emer + dist.emer * dist[i,k] + hab.cov.emer * hab.emer[i]  #emergent disease spread
       logit(phi[i,k]) <- alpha.pers + hab.cov.pers * hab.pers[i]
@@ -374,16 +369,16 @@ cat("
       #Priors
       alpha.occ ~ dunif(-10, 10)    #intercept for state model
       alpha.det ~ dunif(-10, 10)    #intercept for detection model
-      weight.det ~ dunif(-10, 10)    #beta for weighted probability
-      alpha.emer ~ dunif(-10, 10)   #intercept for emergent
-      dist.emer ~ dunif(-10, 10)
-      alpha.est ~ dunif(-10, 10)    #intercept for established
-      neigh.occ ~ dunif(-10, 10)    #beta for infected neighbors
+      weight.det ~ dunif(-10, 10)    #beta for effect of weighted probability on detection
+      alpha.emer ~ dunif(-10, 10)   #intercept for long-distance spread
+      dist.emer ~ dunif(-10, 10)    #beta for effect of distance from prior positives on state model
+      alpha.est ~ dunif(-10, 10)    #intercept for localized spread
+      neigh.occ ~ dunif(-10, 10)    #beta for effect of number of infected neighbors on state model
       alpha.pers ~ dunif(-10, 10)    #intercept for persistence
-      hab.cov.emer ~ dunif(-10, 10)    
-      hab.cov.pers ~ dunif(-10, 10)
-      prev.det ~ dunif(-10,10)
-      
+      hab.cov.emer ~ dunif(-10, 10)   #beta for effect of habitat covariate on long-distance spread
+      hab.cov.pers ~ dunif(-10, 10)   #beta for effect of habitat covariate on persistence
+      prev.det ~ dunif(-10,10)        #beta for effect of prevalence on detection
+
       #RSR Random spatial correlation
       sigma ~ dunif(0,100)
       tau <- pow(sigma, -2)
@@ -398,7 +393,7 @@ sink()
 
 # Bundle data
 win.data <- list(y = y, nsite = dim(y)[1], nrep = dim(y)[2], nyear = dim(y)[3], 
-                 WhichNborsMat = WhichNborsMat, dist=dist, K=K, Q.alpha=Q.alpha, mu.a=mu.a, Xz.vec=Xz.vec, hab.emer=hab.emer, hab.pers=hab.pers, W2=W2, prev=prev) #,true.presence=pos, W2.supple= W2.supple) #rivdist=rivdist, known.pos=known.pos)
+                 WhichNborsMat = WhichNborsMat, dist=dist, K=K, Q.alpha=Q.alpha, mu.a=mu.a, Xz.vec=Xz.vec, hab.emer=hab.emer, hab.pers=hab.pers, W2=W2, prev=prev)
 
 rm(test1)
 
