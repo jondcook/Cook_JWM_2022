@@ -384,18 +384,6 @@ cat("
       hab.cov.pers ~ dunif(-10, 10)
       prev.det ~ dunif(-10,10)
       
-      # alpha.occ ~ dlogis(0, 1)    #intercept for state model
-      # alpha.det ~ dunif(-1.82, 0)    #intercept for detection model
-      # weight.det ~ dunif(0, 0.32)    #beta for weighted probability
-      # alpha.emer ~ dunif(-11.08,0)   #intercept for emergent
-      # dist.emer ~ dunif(-5.70, 0)
-      # alpha.est ~ dunif(-3.79, 0)    #intercept for established
-      # neigh.occ ~ dunif(0, 0.59)    #beta for infected neighbors
-      # alpha.pers ~ dunif(0, 3.40)    #intercept for persistence
-      # hab.cov.emer ~ dunif(0, 1.18)    
-      # hab.cov.pers ~ dunif(-2.95, 0)
-      # prev.det ~ dunif(0,0.60)
-      
       #RSR Random spatial correlation
       sigma ~ dunif(0,100)
       tau <- pow(sigma, -2)
