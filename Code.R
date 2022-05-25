@@ -35,6 +35,7 @@ generateGaussianData <- function(n, center, sigma) {
   data
 }
 
+#start with 5 positives
 n.pos = 5
 center = c(40, 40)
 sigma = matrix(c(2, 0, 0, 2), nrow = 2)
@@ -82,11 +83,11 @@ dist.emer <- -5.5
 hab.cov.emer <- 0.5
 hab.cov.pers <- -1.7
 
+#control for edge effects
 edge <- c(which(key[,2]> 78), which(key[,3]> 78), which(key[,2]<2), which(key[,3]<2))
 edge <- sort(edge)
 edge <- unique(edge)
-
-# # ##Simulated RSR
+##Simulated RSR
 rmvn <- function(n, mu = 0, V = matrix(1)) {
   p <- length(mu)
   if (any(is.na(match(dim(V), p))))
@@ -212,6 +213,8 @@ det.prob <- array(c(vec.matrix),dim = c(nsite,nobs,nyear))
 eff.det.prob <- array(c(vec.matrix),dim = c(nsite,nobs,nyear))
 y <- array(c(vec.matrix),dim = c(nsite,nobs,nyear))
 
+
+#generate observations from truth
 for(l in 1:nyear){
   for(k in 1:nobs){
     det.prob[,k,l] <- inv.logit(alpha.det + prev.std.mat[,l] * prev.det + weight.det * w2.std.y[,k,l])
@@ -220,58 +223,6 @@ for(l in 1:nyear){
     
   }
 } 
-
-##generate neighborhood data
-pos <- matrix(vec.matrix, nrow = nsite, ncol = nyear) 
-##Create a reference dataframe
-for(l in 1:nyear){
-  pos[,l] <- rowSums(y[,,1:l])
-}
-
-pos <- ifelse(pos[,] > 0, 1, 0)
-
-WhichNborsMat.y <- array(vec.matrix, c(nsite, 8, nyear))
-dist.std.y <- matrix(vec.matrix, nrow = nsite, ncol = nyear)
-dist.y <- matrix(vec.matrix, nrow = nsite, ncol = nyear)
-
-#forecasting code
-for(l in 1:(nyear)){
-  
-  #make colonization matrix
-  true.presence.neigh <- data.frame(site=1:nsite, data=pos[ ,l])
-  WhichNborsMat.pred <- true.presence.neigh$data[match(nn, true.presence.neigh$site)]
-  WhichNborsMat.pred[is.na(WhichNborsMat.pred)] <- 0
-  WhichNborsMat.y[,,l] <- matrix(WhichNborsMat.pred, nrow = nsite)
-  
-  #sites of positives for each iteration
-  positives.site <- true.presence.neigh[which(true.presence.neigh$data==1), ]
-  allpoints.ref <- data.frame(site=1:nsite,x=key$X, y=key$Y)
-  positives.x <- allpoints.ref$x[match(positives.site$site, allpoints.ref$site)]
-  positives.y <- allpoints.ref$y[match(positives.site$site, allpoints.ref$site)]
-  positives <- cbind(positives.x,positives.y)
-  positives <- ppp(positives[,1], positives[,2], c(0, 80), c(0, 80))
-  allpoints <- cbind(key$X, key$Y)
-  allpoints <- ppp(allpoints[,1], allpoints[,2], c(0, 80), c(0, 80))
-  distance <- nncross(allpoints,positives)
-  distance <- distance$dist
-  dist.y[,l] <- distance
-  
-  #standardize distance
-  dist.std.y[,l]=((distance)-mean(distance))/sd(distance)
-  rm(positives.site, positives.x, positives.y, positives, true.presence.neigh, distance)
-  
-}
-
-
-#####Subset all for nyears######
-
-nyear.sub <- 16
-y.sub <- y[,,2:nyear.sub]
-WhichNborsMat.y <- WhichNborsMat.y[,,2:nyear.sub]
-dist.std.y <- dist.std.y[,2:nyear.sub]
-w2.std.y <- w2.std.y[,,2:nyear.sub]
-prev.std.mat <- prev.std.mat[,2:nyear.sub]
-
 
 ####Spatial Autocorrelation############################
 #######################################################
