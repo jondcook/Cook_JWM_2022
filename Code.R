@@ -343,14 +343,12 @@ cat("
       y[i,j,(k+1)] ~ dbern(muy[i,j,(k+1)])
       } #j
       
-      z.forjags[i,k] <- z[i,k]
-      
       # #Neighborhood colonization, n.neigh= number of infected neighbors, i.nbors= indicator if neighbors are infected (binary:0,1).
       n.neigh[i, k] <- sum(WhichNborsMat[i, ,k]);
       i.nbors[i, k] <- ifelse(n.neigh[i, k] > 0, 1, 0)
       
       #Psi Mixture
-      psi[i, (k+1)] <- z.forjags[i,k] * phi[i,k] + (1-z.forjags[i,k]) * i.nbors[i,k] * gamma[i,k] + (1-z.forjags[i,k]) * (1- i.nbors[i,k]) * delta[i,k]  #gamma established spread, delta emergent spread
+      psi[i, (k+1)] <- z[i,k] * phi[i,k] + (1-z[i,k]) * i.nbors[i,k] * gamma[i,k] + (1-z[i,k]) * (1- i.nbors[i,k]) * delta[i,k]  #gamma established spread, delta emergent spread
       logit(gamma[i,k]) <- alpha.est + neigh.occ * n.neigh[i,k]  #established disease spread
       logit(delta[i,k]) <- alpha.emer + dist.emer * dist[i,k] + hab.cov.emer * hab.emer[i]  #emergent disease spread
       logit(phi[i,k]) <- alpha.pers + hab.cov.pers * hab.pers[i]
@@ -370,7 +368,7 @@ cat("
       alpha.occ ~ dunif(-10, 10)    #intercept for state model
       alpha.det ~ dunif(-10, 10)    #intercept for detection model
       weight.det ~ dunif(-10, 10)    #beta for effect of weighted probability on detection
-      alpha.emer ~ dunif(-10, 10)   #intercept for long-distance spread
+      alpha.emer ~ dunif(-20, 20)   #intercept for long-distance spread
       dist.emer ~ dunif(-10, 10)    #beta for effect of distance from prior positives on state model
       alpha.est ~ dunif(-10, 10)    #intercept for localized spread
       neigh.occ ~ dunif(-10, 10)    #beta for effect of number of infected neighbors on state model
@@ -402,10 +400,10 @@ zst <- apply(y, c(1, 3), max)	# Observed occurrence as inits for z
 inits <- function(){ list(z = zst)}
 
 # Parameters monitored
-params <- c( "alpha.occ", "dist.emer", "alpha.det","neigh.occ", "alpha.est", "alpha.emer", "alpha.pers", "n.occ", "psi", "hab.cov.emer", "hab.cov.pers", "prev.det", "weight.det")
+params <- c( "dist.emer", "alpha.det","neigh.occ", "alpha.est", "alpha.emer", "alpha.pers", "psi", "hab.cov.emer", "hab.cov.pers", "prev.det", "weight.det")
 
-# MCMC settings
-ni <- 5000
+# MCMC settings/can change these to run longer
+ni <- 500
 nt <- 5
 nb <- 50
 nc <- 3
